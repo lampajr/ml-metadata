@@ -1,0 +1,10 @@
+# CMake related files
+**/CMakeFiles
+**/CMakeCache.txt
+**/*.cmake
+**/Makefile
+
+# Generated files
+**/*.a
+**/*.pb*
+src-gen/
