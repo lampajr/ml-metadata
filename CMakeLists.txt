@@ -47,10 +47,6 @@ if(UPB_ENABLE_UBSAN)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
 endif()
 
-include_directories(.)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${Protobuf_INCLUDE_DIRS})
-
 if(APPLE)
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup -flat_namespace")
 elseif(UNIX)
@@ -59,15 +55,40 @@ endif()
 
 enable_testing()
 
+include_directories(.)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${Protobuf_INCLUDE_DIRS})
+include_directories("/usr/include/mysql")
+include_directories("/usr/include/glog")
+include_directories("/usr/include/absl")
+include_directories("/home/alampare/tools/grpc/include")
+
+find_package(Protobuf REQUIRED)
+find_package(gRPC REQUIRED)
+find_package(gflags REQUIRED)
+find_package(absl REQUIRED)
+
+set(Protobuf_IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ml_metadata/proto)
+include_directories(${Protobuf_IMPORT_DIRS})
+
 SET(PROTO_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ml_metadata/proto")
-add_subdirectory(${PROTO_DIRECTORY} ${PROJECT_SOURCE_DIR}/src-gen)
+add_subdirectory(${PROTO_DIRECTORY} ${PROJECT_SOURCE_DIR}/proto_gen)
+include_directories(${PROJECT_SOURCE_DIR}/proto_gen)
+
+SET(PROTO_TESTING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ml_metadata/proto/testing")
+add_subdirectory(${PROTO_TESTING_DIRECTORY} ${PROJECT_SOURCE_DIR}/proto_testing_gen)
+include_directories(${PROJECT_SOURCE_DIR}/proto_gen)
+
+SET(SIMPLE_TYPES_PROTO_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ml_metadata/simple_types/proto")
+add_subdirectory(${SIMPLE_TYPES_PROTO_DIRECTORY} ${PROJECT_SOURCE_DIR}/simple_types_proto_gen)
+include_directories(${PROJECT_SOURCE_DIR}/simple_types_proto_gen)
 
 add_library(simple_types_constants
   ml_metadata/simple_types/simple_types_constants.cc
   ml_metadata/simple_types/simple_types_constants.h)
 target_link_libraries(simple_types_constants
-  com_google_absl//absl/base:core_headers
-  com_google_absl//absl/strings)
+  absl::core_headers
+  absl::strings)
 set_target_properties(simple_types_constants PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(metadata_source
@@ -75,10 +96,10 @@ add_library(metadata_source
   ml_metadata/metadata_store/metadata_source.h)
 target_link_libraries(metadata_source
   types
-  com_google_absl//absl/status
-  com_google_absl//absl/status:statusor
-  com_google_absl//absl/strings
-  /ml_metadata/util:return_utils)
+  absl::status
+  absl::statusor
+  absl::strings
+  return_utils)
 set_target_properties(metadata_source PROPERTIES LINKER_LANGUAGE CXX)
 target_include_directories(metadata_source PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -87,22 +108,22 @@ add_library(metadata_access_object_base
 target_link_libraries(metadata_access_object_base
   constants
   metadata_source
-  com_google_absl//absl/container:flat_hash_map
-  com_google_absl//absl/container:node_hash_map
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  com_google_absl//absl/time
-  com_google_absl//absl/types:optional
-  com_google_absl//absl/types:span
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  com_google_protobuf//:protobuf)
+  absl::flat_hash_map
+  absl::node_hash_map
+  absl::status
+  absl::strings
+  absl::time
+  absl::optional
+  absl::span
+  metadata_source_proto
+  metadata_store_proto
+  protobuf::libprotobuf)
 set_target_properties(metadata_access_object_base PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(constants
   ml_metadata/metadata_store/constants.h)
 target_link_libraries(constants
-  com_google_absl//absl/strings)
+  absl::strings)
 set_target_properties(constants PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(record_parsing_utils
@@ -110,13 +131,13 @@ add_library(record_parsing_utils
   ml_metadata/metadata_store/record_parsing_utils.h)
 target_link_libraries(record_parsing_utils
   constants
-  com_google_absl//absl/container:flat_hash_set
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:return_utils
-  com_google_glog//:glog)
+  absl::flat_hash_set
+  absl::status
+  absl::strings
+  metadata_source_proto
+  metadata_store_proto
+  return_utils
+  glog)
 set_target_properties(record_parsing_utils PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(rdbms_metadata_access_object
@@ -129,25 +150,26 @@ target_link_libraries(rdbms_metadata_access_object
   metadata_source
   query_executor
   record_parsing_utils
-  com_google_protobuf//:protobuf
-  com_google_absl//absl/algorithm:container
-  com_google_absl//absl/container:flat_hash_map
-  com_google_absl//absl/container:flat_hash_set
-  com_google_absl//absl/container:node_hash_map
-  com_google_absl//absl/status
-  com_google_absl//absl/status:statusor
-  com_google_absl//absl/strings
-  com_google_absl//absl/time
-  com_google_absl//absl/types:optional
-  com_google_absl//absl/types:span
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/simple_types:simple_types_constants
-  /ml_metadata/util:field_mask_utils
-  /ml_metadata/util:return_utils
-  /ml_metadata/util:struct_utils
-  com_google_glog//:glog
-  com_google_protobuf//:cc_wkt_protos)
+  protobuf::libprotobuf
+  absl::algorithm_container
+  absl::flat_hash_map
+  absl::flat_hash_set
+  absl::node_hash_map
+  absl::status
+  absl::statusor
+  absl::strings
+  absl::time
+  absl::optional
+  absl::span
+  metadata_source_proto
+  metadata_store_proto
+  simple_types_constants
+  field_mask_utils
+  return_utils
+  struct_utils
+  glog
+  # com_google_protobuf//:cc_wkt_protos
+  protobuf::libprotobuf)
 set_target_properties(rdbms_metadata_access_object PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(rdbms_metadata_access_object_test
@@ -158,14 +180,14 @@ target_link_libraries(rdbms_metadata_access_object_test
   test_util
   types
   com_google_googletest//:gtest
-  com_google_absl//absl/container:flat_hash_map
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  com_google_absl//absl/time
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:return_utils
-  com_google_glog//:glog)
+  absl::flat_hash_map
+  absl::status
+  absl::strings
+  absl::time
+  metadata_source_proto
+  metadata_store_proto
+  return_utils
+  glog)
 set_target_properties(rdbms_metadata_access_object_test PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(query_executor
@@ -174,15 +196,15 @@ add_library(query_executor
 target_link_libraries(query_executor
   constants
   metadata_source
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  com_google_absl//absl/time
-  com_google_absl//absl/types:optional
-  com_google_absl//absl/types:span
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:return_utils
-  com_google_glog//:glog)
+  absl::status
+  absl::strings
+  absl::time
+  absl::optional
+  absl::span
+  metadata_source_proto
+  metadata_store_proto
+  return_utils
+  glog)
 set_target_properties(query_executor PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(query_executor_test
@@ -194,15 +216,15 @@ target_link_libraries(query_executor_test
   query_executor
   test_util
   com_google_googletest//:gtest
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  com_google_absl//absl/time
-  com_google_absl//absl/types:optional
-  com_google_absl//absl/types:span
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:return_utils
-  com_google_glog//:glog)
+  absl::status
+  absl::strings
+  absl::time
+  absl::optional
+  absl::span
+  metadata_source_proto
+  metadata_store_proto
+  return_utils
+  glog)
 set_target_properties(query_executor_test PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(mysql_query_config_executor_test
@@ -210,37 +232,38 @@ add_library(mysql_query_config_executor_test
 target_link_libraries(mysql_query_config_executor_test
   metadata_source
   mysql_metadata_source
-  query_config_executor
+  # query_config_executor # NOT BUILT DUE TO MISSING ZETASQL
   query_executor
   query_executor_test
   test_mysql_metadata_source_initializer
   com_google_googletest//:gtest_main
-  com_google_absl//absl/memory
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/util:metadata_source_query_config
-  com_google_glog//:glog)
+  absl::memory
+  metadata_source_proto
+  metadata_source_query_config
+  glog)
 set_target_properties(mysql_query_config_executor_test PROPERTIES LINKER_LANGUAGE CXX)
 
-add_library(query_config_executor
-  ml_metadata/metadata_store/query_config_executor.cc
-  ml_metadata/metadata_store/query_config_executor.h)
-target_link_libraries(query_config_executor
-  list_operation_query_helper
-  metadata_source
-  query_executor
-  com_google_glog//:glog
-  com_google_protobuf//:cc_wkt_protos
-  com_google_protobuf//:protobuf
-  com_google_absl//absl/strings
-  com_google_absl//absl/status
-  com_google_absl//absl/status:statusor
-  /ml_metadata/query:filter_query_ast_resolver
-  /ml_metadata/query:filter_query_builder
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:return_utils
-  /ml_metadata/util:struct_utils)
-set_target_properties(query_config_executor PROPERTIES LINKER_LANGUAGE CXX)
+# NOT BUILT DUE TO MISSING ZETASQL
+# add_library(query_config_executor
+#   ml_metadata/metadata_store/query_config_executor.cc
+#   ml_metadata/metadata_store/query_config_executor.h)
+# target_link_libraries(query_config_executor
+#   list_operation_query_helper
+#   metadata_source
+#   query_executor
+#   glog
+#  # com_google_protobuf//:cc_wkt_protos
+#   protobuf::libprotobuf
+#   absl::strings
+#   absl::status
+#   absl::statusor
+#   /ml_metadata/query:filter_query_ast_resolver
+#   /ml_metadata/query:filter_query_builder
+#   metadata_source_proto
+#   metadata_store_proto
+#   return_utils
+#   struct_utils)
+# set_target_properties(query_config_executor PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(list_operation_query_helper
   ml_metadata/metadata_store/list_operation_query_helper.cc
@@ -249,12 +272,12 @@ target_link_libraries(list_operation_query_helper
   constants
   list_operation_util
   types
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  com_google_absl//absl/types:optional
-  com_google_absl//absl/types:span
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:return_utils)
+  absl::status
+  absl::strings
+  absl::optional
+  absl::span
+  metadata_store_proto
+  return_utils)
 set_target_properties(list_operation_query_helper PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(list_operation_util
@@ -262,10 +285,10 @@ add_library(list_operation_util
   ml_metadata/metadata_store/list_operation_util.h)
 target_link_libraries(list_operation_util
   types
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  com_google_absl//absl/types:span
-  /ml_metadata/proto:metadata_store_proto)
+  absl::status
+  absl::strings
+  absl::span
+  metadata_store_proto)
 set_target_properties(list_operation_util PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(metadata_access_object_factory
@@ -276,21 +299,21 @@ target_link_libraries(metadata_access_object_factory
   constants
   metadata_access_object_base
   metadata_source
-  postgresql_query_executor
-  query_config_executor
+  # postgresql_query_executor # NOT BUILT DUE TO MISSING ZETASQL
+  # query_config_executor # NOT BUILT DUE TO MISSING ZETASQL
   rdbms_metadata_access_object
-  com_google_absl//absl/container:flat_hash_map
-  com_google_absl//absl/container:node_hash_map
-  com_google_absl//absl/memory
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  com_google_absl//absl/time
-  com_google_absl//absl/types:optional
-  com_google_absl//absl/types:span
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:return_utils
-  com_google_protobuf//:protobuf)
+  absl::flat_hash_map
+  absl::node_hash_map
+  absl::memory
+  absl::status
+  absl::strings
+  absl::time
+  absl::optional
+  absl::span
+  metadata_source_proto
+  metadata_store_proto
+  return_utils
+  protobuf::libprotobuf)
 set_target_properties(metadata_access_object_factory PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(transaction_executor
@@ -298,16 +321,16 @@ add_library(transaction_executor
   ml_metadata/metadata_store/transaction_executor.h)
 target_link_libraries(transaction_executor
   metadata_source
-  com_google_absl//absl/status
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:return_utils)
+  absl::status
+  metadata_store_proto
+  return_utils)
 set_target_properties(transaction_executor PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(metadata_store_service_interface
   ml_metadata/metadata_store/metadata_store_service_interface.h)
 target_link_libraries(metadata_store_service_interface
-  com_google_absl//absl/status
-  /ml_metadata/proto:metadata_store_service_proto)
+  absl::status
+  metadata_store_service_proto)
 set_target_properties(metadata_store_service_interface PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(metadata_store
@@ -321,23 +344,23 @@ target_link_libraries(metadata_store
   rdbms_metadata_access_object
   simple_types_util
   transaction_executor
-  com_google_protobuf//:protobuf
-  com_google_absl//absl/algorithm:container
-  com_google_absl//absl/container:flat_hash_map
-  com_google_absl//absl/container:flat_hash_set
-  com_google_absl//absl/container:node_hash_map
-  com_google_absl//absl/memory
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  com_google_absl//absl/time
-  com_google_absl//absl/types:optional
-  com_google_absl//absl/types:span
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/proto:metadata_store_service_proto
-  /ml_metadata/simple_types:simple_types_constants
-  /ml_metadata/simple_types/proto:simple_types_proto
-  /ml_metadata/util:return_utils
-  com_google_glog//:glog)
+  protobuf::libprotobuf
+  absl::algorithm_container
+  absl::flat_hash_map
+  absl::flat_hash_set
+  absl::node_hash_map
+  absl::memory
+  absl::status
+  absl::strings
+  absl::time
+  absl::optional
+  absl::span
+  metadata_store_proto
+  metadata_store_service_proto
+  simple_types_constants
+  simple_types_proto
+  return_utils
+  glog)
 set_target_properties(metadata_store PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(metadata_store_test_suite
@@ -348,14 +371,14 @@ target_link_libraries(metadata_store_test_suite
   simple_types_util
   test_util
   com_google_googletest//:gtest
-  com_google_absl//absl/algorithm:container
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  com_google_absl//absl/strings:str_format
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/proto:metadata_store_service_proto
-  /ml_metadata/simple_types/proto:simple_types_proto
-  com_google_glog//:glog)
+  absl::algorithm_container
+  absl::status
+  absl::strings
+  absl::str_format
+  metadata_store_proto
+  metadata_store_service_proto
+  simple_types_proto
+  glog)
 set_target_properties(metadata_store_test_suite PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(metadata_store_headers
@@ -369,18 +392,18 @@ add_library(metadata_store_headers
 target_link_libraries(metadata_store_headers
   constants
   types
-  com_google_absl//absl/container:flat_hash_map
-  com_google_absl//absl/container:node_hash_map
-  com_google_absl//absl/status
-  com_google_absl//absl/status:statusor
-  com_google_absl//absl/strings
-  com_google_absl//absl/time
-  com_google_absl//absl/types:optional
-  com_google_absl//absl/types:span
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/proto:metadata_store_service_proto
-  com_google_protobuf//:protobuf)
+  absl::flat_hash_map
+  absl::node_hash_map
+  absl::status
+  absl::statusor
+  absl::strings
+  absl::time
+  absl::optional
+  absl::span
+  metadata_source_proto
+  metadata_store_proto
+  metadata_store_service_proto
+  protobuf::libprotobuf)
 set_target_properties(metadata_store_headers PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(metadata_store_factory
@@ -392,11 +415,11 @@ target_link_libraries(metadata_store_factory
   postgresql_metadata_source
   sqlite_metadata_source
   transaction_executor
-  com_google_absl//absl/memory
-  com_google_absl//absl/status
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:metadata_source_query_config
-  /ml_metadata/util:return_utils)
+  absl::memory
+  absl::status
+  metadata_store_proto
+  metadata_source_query_config
+  return_utils)
 set_target_properties(metadata_store_factory PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(sqlite_metadata_source_util
@@ -404,10 +427,10 @@ add_library(sqlite_metadata_source_util
   ml_metadata/metadata_store/sqlite_metadata_source_util.h)
 target_link_libraries(sqlite_metadata_source_util
   constants
-  com_google_absl//absl/status:statusor
-  com_google_absl//absl/strings
-  /ml_metadata/proto:metadata_source_proto
-  org_sqlite)
+  absl::statusor
+  absl::strings
+  metadata_source_proto
+  sqlite3)
 set_target_properties(sqlite_metadata_source_util PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(sqlite_metadata_source
@@ -416,34 +439,34 @@ add_library(sqlite_metadata_source
 target_link_libraries(sqlite_metadata_source
   metadata_source
   sqlite_metadata_source_util
-  com_google_absl//absl/status
-  com_google_absl//absl/status:statusor
-  com_google_absl//absl/strings
-  com_google_absl//absl/time
-  /ml_metadata/proto:metadata_store_proto
-  com_google_glog//:glog
-  org_sqlite)
+  absl::status
+  absl::statusor
+  absl::strings
+  absl::time
+  metadata_store_proto
+  glog
+  sqlite3)
 set_target_properties(sqlite_metadata_source PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(test_util
   ml_metadata/metadata_store/test_util.h)
 target_link_libraries(test_util
-  com_google_protobuf//:protobuf
+  protobuf::libprotobuf
   com_google_googletest//:gtest
-  com_google_glog//:glog)
+  glog)
 set_target_properties(test_util PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(simple_types_util
   ml_metadata/metadata_store/simple_types_util.cc
   ml_metadata/metadata_store/simple_types_util.h)
 target_link_libraries(simple_types_util
-  com_google_protobuf//:protobuf
-  com_google_absl//absl/container:flat_hash_map
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/simple_types:simple_types_constants
-  /ml_metadata/simple_types/proto:simple_types_proto)
+  protobuf::libprotobuf
+  absl::flat_hash_map
+  absl::status
+  absl::strings
+  metadata_store_proto
+  simple_types_constants
+  simple_types_proto)
 set_target_properties(simple_types_util PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(types
@@ -458,14 +481,14 @@ target_link_libraries(mysql_metadata_source
   metadata_source
   sqlite_metadata_source_util
   types
-  com_google_absl//absl/status
-  com_google_absl//absl/status:statusor
-  com_google_absl//absl/strings
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:return_utils
-  com_google_glog//:glog
-  libmysqlclient)
+  absl::status
+  absl::statusor
+  absl::strings
+  metadata_source_proto
+  metadata_store_proto
+  return_utils
+  glog
+  mysqlclient)
 set_target_properties(mysql_metadata_source PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(metadata_store_service_impl
@@ -474,10 +497,10 @@ add_library(metadata_store_service_impl
 target_link_libraries(metadata_store_service_impl
   metadata_store
   metadata_store_factory
-  com_google_absl//absl/status
-  /ml_metadata/proto:metadata_store_proto
-  com_github_grpc_grpc//:grpc++
-  com_google_glog//:glog)
+  absl::status
+  metadata_store_service_grpc_proto
+  gRPC::grpc++
+  glog)
 set_target_properties(metadata_store_service_impl PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(metadata_access_object_test
@@ -489,23 +512,23 @@ target_link_libraries(metadata_access_object_test
   test_util
   types
   com_google_googletest//:gtest
-  com_google_absl//absl/container:flat_hash_map
-  com_google_absl//absl/container:node_hash_map
-  com_google_absl//absl/status
-  com_google_absl//absl/status:statusor
-  com_google_absl//absl/strings
-  com_google_absl//absl/strings:str_format
-  com_google_absl//absl/time
-  com_google_absl//absl/types:optional
-  com_google_absl//absl/types:span
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
+  absl::flat_hash_map
+  absl::node_hash_map
+  absl::status
+  absl::statusor
+  absl::strings
+  absl::str_format
+  absl::time
+  absl::optional
+  absl::span
+  metadata_source_proto
+  metadata_store_proto
   /ml_metadata/proto/testing:mock_proto
-  /ml_metadata/util:return_utils
-  com_github_gflags_gflags//:gflags_nothreads
-  com_google_glog//:glog
-  com_google_protobuf//:cc_wkt_protos
-  com_google_protobuf//:protobuf)
+  return_utils
+  gflags_nothreads
+  glog
+  # com_google_protobuf//:cc_wkt_protos
+  protobuf::libprotobuf)
 set_target_properties(metadata_access_object_test PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(metadata_source_test_suite
@@ -516,9 +539,9 @@ target_link_libraries(metadata_source_test_suite
   metadata_source
   test_util
   com_google_googletest//:gtest
-  com_google_absl//absl/status
-  com_google_absl//absl/strings
-  /ml_metadata/proto:metadata_source_proto)
+  absl::status
+  absl::strings
+  metadata_source_proto)
 set_target_properties(metadata_source_test_suite PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(test_mysql_metadata_source_initializer
@@ -532,10 +555,10 @@ add_library(test_standalone_mysql_metadata_source_initializer
 target_link_libraries(test_standalone_mysql_metadata_source_initializer
   mysql_metadata_source
   test_mysql_metadata_source_initializer
-  com_google_absl//absl/memory
-  /ml_metadata/proto:metadata_store_proto
-  com_github_gflags_gflags//:gflags_nothreads
-  com_google_glog//:glog)
+  absl::memory
+  metadata_store_proto
+  gflags_nothreads
+  glog)
 set_target_properties(test_standalone_mysql_metadata_source_initializer PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(mysql_metadata_source_test
@@ -547,9 +570,9 @@ target_link_libraries(mysql_metadata_source_test
   test_mysql_metadata_source_initializer
   com_google_googletest//:gtest
   com_google_googletest//:gtest_main
-  com_google_absl//absl/memory
-  com_github_gflags_gflags//:gflags_nothreads
-  com_google_glog//:glog)
+  absl::memory
+  gflags_nothreads
+  glog)
 set_target_properties(mysql_metadata_source_test PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(mysql_metadata_access_object_test
@@ -561,11 +584,11 @@ target_link_libraries(mysql_metadata_access_object_test
   mysql_metadata_source
   test_mysql_metadata_source_initializer
   com_google_googletest//:gtest
-  com_google_absl//absl/memory
-  com_google_absl//absl/status
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/util:metadata_source_query_config
-  com_google_glog//:glog)
+  absl::memory
+  absl::status
+  metadata_source_proto
+  metadata_source_query_config
+  glog)
 set_target_properties(mysql_metadata_access_object_test PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(postgresql_metadata_source_test
@@ -578,9 +601,9 @@ target_link_libraries(postgresql_metadata_source_test
   com_google_googletest//:gtest
   com_google_googletest//:gtest_main
   com_google_absl//absl/flags:flag
-  com_google_absl//absl/memory
-  com_github_gflags_gflags//:gflags_nothreads
-  com_google_glog//:glog)
+  absl::memory
+  gflags_nothreads
+  glog)
 set_target_properties(postgresql_metadata_source_test PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(test_postgresql_standalone_metadata_source_initializer
@@ -588,11 +611,11 @@ add_library(test_postgresql_standalone_metadata_source_initializer
 target_link_libraries(test_postgresql_standalone_metadata_source_initializer
   postgresql_metadata_source
   test_postgresql_metadata_source_initializer
-  com_google_absl//absl/memory
-  /ml_metadata/proto:metadata_store_proto
-  com_github_gflags_gflags//:gflags_nothreads
-  com_google_glog//:glog
-  postgresql)
+  absl::memory
+  metadata_store_proto
+  gflags_nothreads
+  glog
+  pq)
 set_target_properties(test_postgresql_standalone_metadata_source_initializer PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(postgresql_metadata_source
@@ -603,49 +626,50 @@ target_link_libraries(postgresql_metadata_source
   metadata_source
   sqlite_metadata_source_util
   types
-  com_google_absl//absl/status
-  com_google_absl//absl/status:statusor
-  com_google_absl//absl/strings
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/util:return_utils
-  com_google_glog//:glog
-  postgresql)
+  absl::status
+  absl::statusor
+  absl::strings
+  metadata_source_proto
+  metadata_store_proto
+  return_utils
+  glog
+  pq)
 set_target_properties(postgresql_metadata_source PROPERTIES LINKER_LANGUAGE CXX)
 
-add_library(postgresql_query_executor
-  ml_metadata/metadata_store/postgresql_query_executor.cc
-  ml_metadata/metadata_store/postgresql_query_executor.h)
-target_link_libraries(postgresql_query_executor
-  list_operation_query_helper
-  metadata_source
-  query_config_executor
-  query_executor
-  com_google_glog//:glog
-  com_google_protobuf//:cc_wkt_protos
-  com_google_protobuf//:protobuf
-  com_google_absl//absl/status
-  com_google_absl//absl/status:statusor
-  com_google_absl//absl/strings
-  /ml_metadata/proto:metadata_source_proto
-  /ml_metadata/proto:metadata_store_proto
-  /ml_metadata/query:filter_query_ast_resolver
-  /ml_metadata/query:filter_query_builder
-  /ml_metadata/util:return_utils
-  /ml_metadata/util:struct_utils)
-set_target_properties(postgresql_query_executor PROPERTIES LINKER_LANGUAGE CXX)
+# NOT BUILT DUE TO MISSING ZETASQL?
+# add_library(postgresql_query_executor
+#   ml_metadata/metadata_store/postgresql_query_executor.cc
+#   ml_metadata/metadata_store/postgresql_query_executor.h)
+# target_link_libraries(postgresql_query_executor
+#   list_operation_query_helper
+#   metadata_source
+#   query_config_executor # NOT BUILT DUE TO MISSING ZETASQL
+#   query_executor
+#   glog
+# #  com_google_protobuf//:cc_wkt_protos
+#   protobuf::libprotobuf
+#   absl::status
+#   absl::statusor
+#   absl::strings
+#   metadata_source_proto
+#   metadata_store_proto
+#   /ml_metadata/query:filter_query_ast_resolver
+#   /ml_metadata/query:filter_query_builder
+#   return_utils
+#   struct_utils)
+# set_target_properties(postgresql_query_executor PROPERTIES LINKER_LANGUAGE CXX)
 
-add_library(postgresql_query_executor_test
-  ml_metadata/metadata_store/postgresql_query_executor_test.cc)
-target_link_libraries(postgresql_query_executor_test
-  postgresql_query_executor
-  query_executor
-  query_executor_test
-  test_postgresql_metadata_source_initializer
-  com_google_googletest//:gtest_main
-  com_google_absl//absl/memory
-  /ml_metadata/util:metadata_source_query_config)
-set_target_properties(postgresql_query_executor_test PROPERTIES LINKER_LANGUAGE CXX)
+# add_library(postgresql_query_executor_test
+#   ml_metadata/metadata_store/postgresql_query_executor_test.cc)
+# target_link_libraries(postgresql_query_executor_test
+#   postgresql_query_executor
+#   query_executor
+#   query_executor_test
+#   test_postgresql_metadata_source_initializer
+#   com_google_googletest//:gtest_main
+#   absl::memory
+#   metadata_source_query_config)
+# set_target_properties(postgresql_query_executor_test PROPERTIES LINKER_LANGUAGE CXX)
 
 add_library(test_postgresql_metadata_source_initializer
   ml_metadata/metadata_store/test_postgresql_metadata_source_initializer.h)
@@ -653,5 +677,54 @@ target_link_libraries(test_postgresql_metadata_source_initializer
   postgresql_metadata_source)
 set_target_properties(test_postgresql_metadata_source_initializer PROPERTIES LINKER_LANGUAGE CXX)
 
+add_library(metadata_source_query_config
+  ml_metadata/util/metadata_source_query_config.cc
+  ml_metadata/util/metadata_source_query_config.h)
+target_link_libraries(metadata_source_query_config
+  protobuf::libprotobuf
+  absl::strings
+  metadata_source_proto
+  glog)
+set_target_properties(metadata_source_query_config PROPERTIES LINKER_LANGUAGE CXX)
 
+add_library(return_utils
+  ml_metadata/util/return_utils.h)
+set_target_properties(return_utils PROPERTIES LINKER_LANGUAGE CXX)
 
+add_library(struct_utils
+  ml_metadata/util/struct_utils.cc
+  ml_metadata/util/struct_utils.h)
+target_link_libraries(struct_utils
+  protobuf::libprotobuf
+  absl::status
+  absl::strings
+  # com_google_protobuf//:cc_wkt_protos
+  protobuf::libprotobuf)
+set_target_properties(struct_utils PROPERTIES LINKER_LANGUAGE CXX)
+
+add_library(field_mask_utils
+  ml_metadata/util/field_mask_utils.cc
+  ml_metadata/util/field_mask_utils.h)
+target_link_libraries(field_mask_utils
+  absl::flat_hash_set
+  absl::status
+  absl::statusor
+  absl::strings
+  metadata_store_proto
+  protobuf::libprotobuf)
+set_target_properties(field_mask_utils PROPERTIES LINKER_LANGUAGE CXX)
+
+add_executable(metadata_store_server
+  ml_metadata/metadata_store/metadata_store_server_main.cc)
+target_link_libraries(metadata_store_server
+  metadata_store
+  metadata_store_factory
+  metadata_store_service_impl
+  protobuf::libprotobuf
+  absl::status
+  absl::statusor
+  absl::strings
+  metadata_store_proto
+  gflags_nothreads
+  gRPC::grpc++
+  glog)

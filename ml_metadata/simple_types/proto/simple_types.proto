@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package ml_metadata;
 
-import "ml_metadata/proto/metadata_store.proto";
+import "metadata_store.proto";
 
 // A bundle of ml-metadata types to describe artifacts, executions and contexts
 // in general ML pipelines.

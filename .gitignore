@@ -7,4 +7,6 @@
 # Generated files
 **/*.a
 **/*.pb*
-src-gen/
+proto_gen/
+proto_testing_gen/
+simple_types_proto_gen/

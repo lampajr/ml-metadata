@@ -18,7 +18,7 @@ syntax = "proto2";
 package ml_metadata;
 
 import "google/protobuf/field_mask.proto";
-import "ml_metadata/proto/metadata_store.proto";
+import "metadata_store.proto";
 
 // An artifact and type pair. Part of an artifact struct.
 message ArtifactAndType {
