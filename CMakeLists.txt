@@ -55,6 +55,8 @@ endif()
 
 enable_testing()
 
+# TODO: integrate zetasql and build commented out libraries
+
 include_directories(.)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${Protobuf_INCLUDE_DIRS})
@@ -67,6 +69,7 @@ find_package(Protobuf REQUIRED)
 find_package(gRPC REQUIRED)
 find_package(gflags REQUIRED)
 find_package(absl REQUIRED)
+find_package(zetasql QUIET)
 
 set(Protobuf_IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ml_metadata/proto)
 include_directories(${Protobuf_IMPORT_DIRS})
@@ -244,6 +247,36 @@ target_link_libraries(mysql_query_config_executor_test
 set_target_properties(mysql_query_config_executor_test PROPERTIES LINKER_LANGUAGE CXX)
 
 # NOT BUILT DUE TO MISSING ZETASQL
+# add_library(filter_query_ast_resolver
+#   ml_metadata/query/filter_query_ast_resolver.cc
+#   ml_metadata/query/filter_query_ast_resolver.h)
+# target_link_libraries(filter_query_ast_resolver
+#   com_google_absl//absl/container:flat_hash_set
+#   com_google_absl//absl/status
+#   com_google_absl//absl/status:statusor
+#   com_google_absl//absl/strings
+#   /ml_metadata/proto:metadata_store_proto
+#   /ml_metadata/util:return_utils
+#   com_googlesource_code_re2//:re2
+#   com_google_zetasql//zetasql/public:analyzer
+#   com_google_zetasql//zetasql/public:simple_catalog)
+# set_target_properties(filter_query_ast_resolver PROPERTIES LINKER_LANGUAGE CXX)
+
+# add_library(filter_query_builder
+#   ml_metadata/query/filter_query_builder.cc
+#   ml_metadata/query/filter_query_builder.h)
+# target_link_libraries(filter_query_builder
+#   com_google_absl//absl/container:btree
+#   com_google_absl//absl/status
+#   com_google_absl//absl/strings
+#   /ml_metadata/metadata_store:constants
+#   /ml_metadata/proto:metadata_store_proto
+#   com_google_glog//:glog
+#   com_google_zetasql//zetasql/public:strings
+#   com_google_zetasql//zetasql/resolved_ast:sql_builder)
+# set_target_properties(filter_query_builder PROPERTIES LINKER_LANGUAGE CXX)
+
+# NOT BUILT DUE TO MISSING ZETASQL
 # add_library(query_config_executor
 #   ml_metadata/metadata_store/query_config_executor.cc
 #   ml_metadata/metadata_store/query_config_executor.h)
@@ -257,8 +290,8 @@ set_target_properties(mysql_query_config_executor_test PROPERTIES LINKER_LANGUAG
 #   absl::strings
 #   absl::status
 #   absl::statusor
-#   /ml_metadata/query:filter_query_ast_resolver
-#   /ml_metadata/query:filter_query_builder
+#   # /ml_metadata/query:filter_query_ast_resolver
+#   # /ml_metadata/query:filter_query_builder
 #   metadata_source_proto
 #   metadata_store_proto
 #   return_utils
